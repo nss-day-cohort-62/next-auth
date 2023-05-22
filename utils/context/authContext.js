@@ -1,13 +1,13 @@
 // Context API Docs: https://beta.reactjs.org/learn/passing-data-deeply-with-context
-
-import React, {
+import { useRouter } from 'next/router';
+import {
   createContext,
   useContext,
   useEffect,
   useMemo,
   useState,
+  useCallback,
 } from 'react';
-import { firebase } from '../client';
 
 const AuthContext = createContext();
 
@@ -15,21 +15,35 @@ AuthContext.displayName = 'AuthContext'; // Context object accepts a displayName
 
 const AuthProvider = (props) => {
   const [user, setUser] = useState(null);
+  const router = useRouter();
 
   // there are 3 states for the user:
   // null = application initial state, not yet loaded
   // false = user is not logged in, but the app has loaded
   // an object/value = user is logged in
 
+  const signOut = useCallback(() => {
+    localStorage.removeItem('user');
+    setUser(false);
+    router.push('/signin');
+  }, [router]);
+
+  const signIn = useCallback((userObj) => {
+    localStorage.setItem('user', JSON.stringify(userObj));
+    setUser(userObj);
+    router.push('/');
+  }, [router]);
+
   useEffect(() => {
-    firebase.auth().onAuthStateChanged((fbUser) => {
-      if (fbUser) {
-        setUser(fbUser);
+    if (!['/signin', '/register'].includes(router.pathname)) {
+      const userStorage = localStorage.getItem('user');
+      if (userStorage) {
+        setUser(JSON.parse(userStorage));
       } else {
-        setUser(false);
+        signOut();
       }
-    }); // creates a single global listener for auth state changed
-  }, []);
+    }
+  }, [router.pathname, signOut]);
 
   const value = useMemo( // https://reactjs.org/docs/hooks-reference.html#usememo
     () => ({
@@ -37,8 +51,10 @@ const AuthProvider = (props) => {
       userLoading: user === null,
       // as long as user === null, will be true
       // As soon as the user value !== null, value will be false
+      signOut,
+      signIn,
     }),
-    [user],
+    [user, signOut, signIn],
   );
 
   return <AuthContext.Provider value={value} {...props} />;

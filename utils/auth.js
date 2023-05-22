@@ -1,13 +1,19 @@
-import firebase from 'firebase/app';
-import 'firebase/auth';
+import axios from 'axios';
 
-const signIn = () => {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  firebase.auth().signInWithPopup(provider);
-};
+const login = (user) => (
+  axios.post('http://localhost:8000/login', user, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+);
 
-const signOut = () => {
-  firebase.auth().signOut();
-};
+const register = (user) => (
+  axios.post('http://localhost:8000/register', user, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+);
 
-export { signIn, signOut };
+export { login, register };
